@@ -34,7 +34,7 @@ node *create_poly(char A[]){
             p->coe = index == 1?-1:1;
         }
         else{
-            while (temp > '0' && temp < '9') {
+            while (temp >= '0' && temp <= '9') {
                 stack[index++] = temp;
                 temp = A[i++];
             }
@@ -59,7 +59,7 @@ node *create_poly(char A[]){
                     }
                     temp = A[i++];
                 }
-                while (temp > '0' && temp < '9') {
+                while (temp >= '0' && temp <= '9') {
                     stack[index++] = temp;
                     temp = A[i++];
                 }
