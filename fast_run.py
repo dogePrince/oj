@@ -2,162 +2,163 @@ import sys
 import os
 import subprocess
 import re
+import shutil
+import argparse
 from colorama import init, Fore, Back, Style
+init(autoreset=True)
 
-# def get_platform():
-#     platform = sys.platform
-#     pattern = re.compile("^win", re.I)
-#     sys_result = pattern.match("win32")
-#     if sys_result is not None:
-#         return "win"
-#     else:
-#         return "unix"
 
-class QuickRun():
-    valid_settings = {  # config_name: is_a_value_required
-                   "-debug": False,
-                   "-o": True,
-                   "-compare": False
-               }
+class Project:
+    def __init__(self, src, name='', out='', _type='c', _args=None):
+        self._out = ''
 
-    parent = None
-    project = None
-    type = None
-    exec = None
-    setting = {}
-    cmd_args = []
+        self.exec = None
+        self.platform = None
+        self.name = name
+        self.src = src
+        self.type = _type
+        self.out = out
+        self.args = _args
 
-    def __init__(self, parent, project, *args=None, *settings=None):
-        self.parent = parent
-        self.project = project  # user specify a project name
-        if "." in project:
-            self.project = project.split(".")[0]
-            self.type = project.split(".")[1]
+        self.set_platform()
+
+    def create(self):
+        if os.path.exists(self.src):
+            os.makedirs(self.src, exist_ok=True)
+            main_file = os.path.join(self.src, self.name)
+            if os.path.exists(main_file):
+                if self.type == 'c':
+                    src = os.path.normpath('templates/temp.c')
+                    dst = os.path.join(self.src, self.name+'.c')
+                elif self.type == 'cpp':
+                    src = os.path.normpath('templates/temp.cpp')
+                    dst = os.path.join(self.src, self.name+'.cpp')
+                else:
+                    raise Exception(Fore.RED + "Unknown source type.")
+                shutil.copyfile(src, dst)
+
+    def set_platform(self):
+        pattern = re.compile("^win", re.I)
+        sys_result = pattern.match(sys.platform)
+        if sys_result is not None:
+            self.platform = "win"
         else:
-            self.project = project
-            self.type = "c"
+            self.platform = "unix"
 
-        if args is not None:
-            self.cmd_args = args
-        if args is not None:
-            self.setting = settings
-
-    def build(self, *settings=None):
-        if settings is None:
-            settings = self.settings
-        debug_path = setting.get["-o"]
-        if debug_path is None:
-            debug_path = "debug"  # path where gcc(g++) output
-
-        if not os.path.exists(debug_path):
-            os.mkdir(debug_path)
-
-        src = os.path.join(self.parent, self.project, f"{self.project}.{self.type}")
-        out = os.path.join(debug_path, self.project)
-
-        if self.type == "c":
-            cmd = f"gcc {src} -o {out}"
-        else if self.type == "cpp":
-            cmd = f"g++ {src} -o {out}_cpp"
-        else:
-            raise Fore.RED + "Unknown source type."
-        result = {}
-        try:
-            subprocess.check_output(cmd, shell=True)
-            result["exec"] = out
-            result["info"] = "build success!"
-            self.exec = out
-        except Exception as exc:
-            result["info"] = exc.output.decode('utf-8')
+    def get_src_to_string(self):
+        result = ''
+        files = os.listdir(self.src)
+        pattern = re.compile(rf'.+?\.{self.type}$')
+        for file in files:
+            if pattern.match(file):
+                result += os.path.join(self.src, file) + ' '
         return result
 
-    def run(self, args=None):
-        if args is None:
-            args = self.args
-        if self.exec is None:
-            raise Fore.RED + "You should build firstly."
-        cmd = [self.exec]
-        if args is not None:
-            cmd.extend(args)
-        subprocess.call(cmd)
+    def build(self):
+        if not os.path.exists(self.src) or not os.listdir(self.src):
+            print(Fore.RED + "source code doesn't exists")
+            return False
 
-    def debug(self, args=None):
-        if args is None:
-            args = self.args
-        cmd = ["gdb", self.exec]
-        if args != None:
-            cmd.extend(args)
-        subprocess.call(cmd)
+        src = self.get_src_to_string()
+        dst = self.exec
 
-    def fast_run(self, *args=None, *settings=None):
-        if settings is None:
-            settings = self.settings
-        result = build(settings)
-        exec = result.get("exec")
-        if exec is not None:
-            print(Fore.GREEN + result["info"])
-            if not setting.get["-debug"]:
-                run(exec, args=args)
-            else:
-                debug(exec, args=args)
+        if not os.path.exists(self.out):
+            os.makedirs(self.out, exist_ok=True)
+
+        if self.type == "c":
+            cmd = f"gcc {src} -o {dst}"
+        elif self.type == "cpp":
+            cmd = f"g++ {src} -o {dst}"
         else:
-            print(result["info"])
+            print(Fore.RED + "Unknown source type.")
+            return False
+        try:
+            subprocess.check_output(cmd, shell=True)
+            return True
+        except Exception as exc:
+            print(Fore.RED + exc.output.decode('utf-8'))
+            return False
 
-
-def read_setting(self, args):
-    index = 0
-    while index < len(args):
-        required = self.valid_settings.get(args[index])
-        if required is None:
-            print(Fore.RED + f'Invalid config key "{args[index]}"')
-            return 1
-        else if required:
-            if index+1 >= len(args):
-                print(Fore.RED + f'You should give a value to key "{args[index]}"')
-                return 1
-            self.setting[args[index]] = args[index+1]
-            index += 2
+    def run(self, _args=None, debug=False):
+        if not os.path.exists(self.exec):
+            raise Exception(Fore.RED + "You should build firstly.")
         else:
-            self.setting[args[index]] = True
-            index += 1
-    print(Fore.GREEN + 'Conplete to read settings.')
-    return 0
+            cmd = []
+            if debug:
+                cmd.append('gdb')
+            cmd.append(self.exec)
+            if _args:
+                cmd.extend(_args)
+            elif type(self.args) is list:
+                cmd.extend(self.args)
+            subprocess.call(cmd)
+            self.args = _args
 
-def fast_run(path, pro, args=None, to_debug=False):
-    result = build(path, pro)
-    exec = result.get("exec")
-    if exec is not None:
-        print(Fore.GREEN + result["info"])
-        if not to_debug:
-            run(exec, args=args)
+    def delete(self):
+        if os.path.exists(self.exec):
+            os.remove(self.exec)
+        if os.path.exists(self.out) and not os.listdir(self.out):
+            os.rmdir(self.out)
+        if os.path.exists(self.src):
+            shutil.rmtree(self.src)
+
+    @property
+    def src(self):
+        return self._src
+
+    @src.setter
+    def src(self, src):
+        if not src:
+            print(Fore.RED + 'src should be a not empty string')
         else:
-            debug(exec, args=args)
-    else:
-        print(result["info"])
+            self._src = src
+            if not self.name:
+                self.name = os.path.basename(os.path.normpath(src))
+
+    @property
+    def out(self):
+        return self._out
+
+    @out.setter
+    def out(self, out):
+        if not out:
+            self._out = os.path.join(self.src, 'debug')
+        else:
+            self._out = out
+        self.exec = os.path.join(self.out, self.name)
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        if name:
+            self._name = name
+            self.exec = os.path.join(self.out, self.name)
+
 
 if __name__ == '__main__':
-    init(autoreset=True)
-    arg_len = len(sys.argv)
-    if arg_len == 1:
-        print(Fore.RED + "A project name is needed!")
-        exit(1)
-    path = sys.argv[0]
-    project = sys.argv[1]  # user specify a project name
-    parent = os.path.abspath(os.path.join(path, os.pardir))
+    parser = argparse.ArgumentParser(prog='get_cc_test', description='quick build a project')
+    parser.add_argument('src', help='source path')
+    parser.add_argument('--name', default='', help='project name')
+    parser.add_argument('--type', choices=['c', 'cpp'], default='c', help='project type')
+    parser.add_argument('--out', default='', help='binary file path')
+    parser.add_argument('--actions', nargs='+', choices=['build', 'run', 'debug', 'delete'], default=['build', 'run'], help='actions you can do')
+    parser.add_argument('--args', nargs='+', default=None, help='arguments for project')
 
-    args = []
-    setting = {}
-    if arg_len > 2:
-        index = 2
-        while index < arg_len:
-            if sys.argv[index].startswith("-"):
-                break;
-            else:
-                args.append(sys.argv[index])
-                index += 1
-        while index in range(index, arg_len):
-            if sys.argv[index] in valid_settings:
+    args = parser.parse_args()
+    P = Project(args.src, name=args.name, out=args.out, _type=args.type, _args=args.args)
 
+    if 'delete' in args.actions:
+        P.delete()
+        exit(0)
 
+    if 'build' in args.actions:
+        if not P.build():
+            exit(1)
 
-    fast_run(parent, project, args=args, to_debug=to_debug)
+    if 'run' in args.actions:
+        P.run()
+    elif 'debug' in args.actions:
+        P.run(debug=True)
