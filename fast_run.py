@@ -13,7 +13,6 @@ def read_case(paths):
     if paths is None:
         return None
 
-    case_set = []
     file_set = []
     for path in paths:
         if os.path.isfile(path):
@@ -22,12 +21,8 @@ def read_case(paths):
             for root, dirs, files in os.walk(path, topdown=False):
                 for file in files:
                     file_set.append(os.path.join(root, file))
-    for file in file_set:
-        with open(file, 'r') as f:
-            case = f.read()
-            case_set.append(case)
 
-    return case_set
+    return file_set
 
 
 class Project:
@@ -64,6 +59,8 @@ class Project:
             case_dir = f'{self.src}/cases'
             os.makedirs(case_dir, exist_ok=True)
             with open(f'{case_dir}/case1.txt', 'w'): pass
+
+            os.makedirs(f'{self.src}/output', exist_ok=True)
 
 
     def set_platform(self):
@@ -122,22 +119,26 @@ class Project:
 
             case_set = read_case(self.input)
 
-            if case_set:
+            if case_set and not debug:
                 count = 0
                 for case in case_set:
                     count += 1
-                    print(Fore.GREEN + f'case {count}:')
-                    print(case.strip())
+                    file_name = os.path.basename(os.path.normpath(case))
+                    print(Fore.GREEN + f'case {count}: ({file_name})')
+                    # print(case.strip())
                     t1 = datetime.datetime.utcnow()
 
-                    p = Popen(cmd, stdout=PIPE, stdin=PIPE, stderr=PIPE, encoding='utf8')
-                    p.stdin.write(case)
-                    out, err = p.communicate()
+                    with open(case, 'r') as file_in, \
+                         open(os.path.join(self.src, f'output/{file_name}_out.txt'), 'w') as file_out:
+                        p = Popen(cmd, stdout=file_out, stdin=file_in, stderr=sys.stderr, encoding='utf8')
+
+                        file_out.flush()
+
                     p.wait()
                     p.kill()
 
-                    print(Fore.MAGENTA + 'result:')
-                    print(out)
+                    # print(Fore.MAGENTA + 'result:')
+                    # print(out)
                     t2 = datetime.datetime.utcnow()
                     print(Fore.CYAN + f'start:\t{t1}\nend:\t{t2}\nduring:\t{(t2-t1).total_seconds()}\n')
             else:
@@ -185,7 +186,7 @@ class Project:
         if input is None:
             self._input = None
         elif input == []:
-            self._input = os.listdir(os.path.join(self.src, 'inputs'))
+            self._input = [os.path.join(self.src, 'cases')]
         else:
             self._input = input
 
@@ -205,27 +206,33 @@ if __name__ == '__main__':
     parser.add_argument('--name', default='', help='project name')
     parser.add_argument('--type', choices=['c', 'cpp'], default='cpp', help='project type')
     parser.add_argument('--out', default='', help='binary file path')
-    parser.add_argument('--actions', nargs='+', choices=['build', 'run', 'debug', 'delete', 'create'], default=['build', 'run'], help='actions you can do')
-    parser.add_argument('--args', nargs='+', default=[], help='arguments for project')
+
+    parser.add_argument('--build', action='store_true', help='build project')
+    parser.add_argument('--run', nargs='*', default=None, help='run project')
+    parser.add_argument('--debug', action='store_true', help='debug project')
+    parser.add_argument('--delete', action='store_true', help='delete project')
+    parser.add_argument('--create', action='store_true', help='create a project')
+
     parser.add_argument('--input', nargs='*', default=None, help='path of input file')
 
     args = parser.parse_args()
 
-    P = Project(args.src, name=args.name, out=args.out, _type=args.type, _args=args.args, _input=args.input)
+    P = Project(args.src, name=args.name, out=args.out, _type=args.type, _args=args.run, _input=args.input)
 
-    if 'delete' in args.actions:
-        P.delete()
-        exit(0)
-
-    if 'create' in args.actions:
-        P.create()
-        exit(0)
-
-    if 'build' in args.actions:
-        if not P.build():
-            exit(1)
-
-    if 'run' in args.actions:
+    if not (args.build or args.run is not None or args.debug or args.delete or args.create):
+        P.args = []
+        P.build()
         P.run()
-    elif 'debug' in args.actions:
-        P.run(debug=True)
+    else:
+        if args.build:
+            if args.delete or args.create:
+                exit(1)
+            P.build()
+        if args.run is not None and not (args.debug or args.delete or args.create):
+            P.run()
+        elif args.debug and not (args.run is not None or args.delete or args.create):
+            P.run(debug=True)
+        elif args.delete and not (args.run is not None or args.debug or args.create):
+            P.delete()
+        elif args.create and not (args.run is not None or args.debug or args.delete):
+            P.create()
