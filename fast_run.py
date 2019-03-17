@@ -20,14 +20,13 @@ class Project:
         self.name = None
         self.exec = None
         self.platform = None
+        self.set_platform()
 
         self.type = _type
         self.args = _args
         self.src = src
         self.debug = debug
         self.cases = cases
-
-        self.set_platform()
 
     # create project if it not exists
     def create(self):
@@ -111,7 +110,8 @@ class Project:
         try:
             subprocess.check_output(cmd, shell=True)
         except Exception as exc:
-            raise Exception(exc.output.decode('utf-8'))
+            print(exc.output.decode('utf-8'))
+            raise Exception('Build Error!')
 
     def run(self, debug=False):
         if not os.path.exists(self.exec):
@@ -196,6 +196,8 @@ class Project:
         else:
             self._debug = debug
         self.exec = os.path.join(self.debug, self.name)
+        if self.platform == 'win':
+            self.exec += '.exe'
 
     @property
     def cases(self):
