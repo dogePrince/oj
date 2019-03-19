@@ -44,7 +44,7 @@ class Project:
             # create cases folder
             case_dir = os.path.join(self.src, "cases")
             os.makedirs(case_dir, exist_ok=True)
-            with open(os.path.join(case_dir, "case1"), 'w'): pass
+            shutil.copyfile(os.path.join("templates", "case"), os.path.join(case_dir, "case1"))
 
             # create debug folder
             os.makedirs(self.debug, exist_ok=True)
@@ -89,7 +89,6 @@ class Project:
                 for root, dirs, files in os.walk(path, topdown=False):
                     for file in files:
                         file_set.append(os.path.join(root, file))
-
         return file_set
 
     def build(self):
@@ -114,40 +113,56 @@ class Project:
             raise Exception('Build Error!')
 
     def run(self, debug=False):
+        # check if exec exists
         if not os.path.exists(self.exec):
             raise Exception(Fore.RED + 'You should build firstly.')
 
+        # for cases output
+        out_path = os.path.join(self.debug, 'out')
+        if not os.path.exists(out_path):
+            os.makedirs(out_path, exist_ok=True)
+
+        # exec + args
         cmd = [self.exec]
         cmd.extend(self.args)
 
-        case_set = self.read_case()
-        if not case_set:
+        # if no case to run with, run cmd directly.
+        case_path_set = self.read_case()
+        if not case_path_set:
             subprocess.call(cmd)
             return
 
+        # break case file to two parts
+        self.break_case(case_path_set)
+        case_set = os.listdir(os.path.join(self.debug, 'cases'))
+
+        # trversal all cases
         total_count = 0
         passed_count = 0
         failed_count = 0
         other_count = 0
         for case in case_set:
             total_count += 1
+            case_file_name = os.path.join(self.debug, 'cases', case)
+            expect_file_name = os.path.join(self.debug, 'expects', f'{case}_expect')
+            out_file_name = os.path.join(self.debug, 'out', f'{case}_out')
+
             print(Fore.GREEN + f'case {total_count}:')
-            print(f'path: {case}')
+            print(f'path: {case_file_name}')
 
-            file_name = os.path.basename(os.path.normpath(case))
-            out_file_name = os.path.join(self.src, 'debug', f'{file_name}_out.txt')
-
+            # execute and compute delta time
             start_time = datetime.datetime.utcnow()
-            with open(case, 'r') as file_in, \
+            with open(case_file_name, 'r') as file_in, \
                  open(out_file_name, 'w') as file_out:
                 p = Popen(cmd, stdout=file_out, stdin=file_in, stderr=sys.stderr, encoding='utf8')
                 file_out.flush()
             p.wait()
             p.kill()
             end_time = datetime.datetime.utcnow()
-
             print(Fore.CYAN + f'start:\t{start_time}\nend:\t{end_time}\nduring:\t{(end_time-start_time).total_seconds()}\n')
-            compare_result = self.compare(case, out_file_name)
+
+            # compare if result equal to expect
+            compare_result = self.file_compare(expect_file_name, out_file_name)
             if compare_result == 'passed':
                 print('status: ' + Fore.GREEN + 'passed\n')
                 passed_count += 1
@@ -158,20 +173,47 @@ class Project:
                 other_count +=1
         print(Fore.MAGENTA + f'total:  {total_count}\npassed: {passed_count}\nfailed: {failed_count}\nother:  {other_count}')
 
-    def compare(self, case, output):
-        with open(case, 'r') as case_file, \
+    def file_compare(self, expect, output):
+        if not os.path.exists(expect):
+            return 'noExpect'
+        with open(expect, 'r') as expect_file, \
              open(output, 'r') as output_file:
-            splitor = '#'*6
-            content1 = case_file.read()
-            if splitor in content1:
-                content1 = content1.split('#'*6)[1].strip()
-                content2 = output_file.read().strip()
-                if content1 == content2:
-                    return 'passed'
-                else:
-                    return 'failed'
+            content1 = expect_file.read().strip()
+            content2 = output_file.read().strip()
+            if content1 == content2:
+                return 'passed'
             else:
-                return 'noExpect'
+                return 'failed'
+
+    def break_case(self, cases):
+        count = 0
+        cases_target = os.path.join(self.debug, 'cases')
+        expects_target = os.path.join(self.debug, 'expects')
+        if not os.path.exists(cases_target):
+            os.makedirs(cases_target, exist_ok=True)
+        if not os.path.exists(expects_target):
+            os.makedirs(expects_target, exist_ok=True)
+        for case in cases:
+            flag = 'case'
+            with open(case, 'r') as case_file:
+                line = case_file.readline()
+                file = None
+                while line:
+                    if line == '###Case###\n':
+                        count += 1
+                        if file is not None:
+                            file.close()
+                        case_path = os.path.join(cases_target, f'case{count}')
+                        file = open(case_path, 'w')
+                    elif line == '###Result###\n':
+                        if file is not None:
+                            file.close()
+                        res_path = os.path.join(expects_target, f'case{count}_expect')
+                        file = open(res_path, 'w')
+                    else:
+                        if file is not None:
+                            file.write(line)
+                    line = case_file.readline()
 
     @property
     def src(self):
