@@ -1,0 +1,16 @@
+###Case###
+4
+3 Today is Friday
+3 friday toDAY Is
+5 it is a nice day
+5 A nice day it is
+4 its beautiful isnt it
+5 it is Beautiful its isnt
+3 its its its
+3 sit its its
+
+###Result###
+Case 1: YES
+Case 2: YES
+Case 3: NO
+Case 4: NO

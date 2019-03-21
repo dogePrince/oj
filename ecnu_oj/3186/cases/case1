@@ -1,0 +1,13 @@
+###Case###
+3
+three four + five six =
+zero seven + eight nine =
+zero + zero =
+
+###Result###
+case #0:
+90
+case #1:
+96
+case #2:
+0

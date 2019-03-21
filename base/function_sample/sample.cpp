@@ -41,3 +41,8 @@ reverse(res.begin(), res.end());
 for (vector<int>::iterator it = res.begin(); it != res.end(); it++) {
     printf("%d ", *it);
 }
+
+string.h
+
+sscanf
+sprintf

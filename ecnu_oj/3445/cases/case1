@@ -1,0 +1,23 @@
+###Case###
+iamstupid stupid clever
+
+###Result###
+iamclever
+
+###Case###
+aaa a b
+
+###Result###
+bbb
+
+###Case###
+aaa c b
+
+###Result###
+aaa
+
+###Case###
+aaad a b
+
+###Result###
+bbbd

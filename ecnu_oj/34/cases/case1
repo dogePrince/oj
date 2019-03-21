@@ -1,0 +1,22 @@
+###Case###
+iamstupid pi
+
+###Result###
+iamstud
+
+###Case###
+aaa a
+
+###Result###
+
+###Case###
+aaa b
+
+###Result###
+aaa
+
+###Case###
+aba a
+
+###Result###
+b

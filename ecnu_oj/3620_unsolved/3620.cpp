@@ -7,8 +7,8 @@ using namespace std;
 #define LSIZE 1000005
 
 typedef struct {
-    int w;
-    int a;
+    long long w;
+    long long a;
     long long cur_sum;
     long long pre_sum;
 }Expand;
@@ -22,12 +22,12 @@ Expand expand[LSIZE];
 int main(int argc, char const *argv[]) {
     int n;
     scanf("%d", &n);
-    int tw, ta;
+    long long tw, ta;
     int n1 = 1;
     int n2 = 1;
     Expand *p;
     for (int i = 0; i < n; i++) {
-        scanf("%d %d", &tw, &ta);
+        scanf("%lld %lld", &tw, &ta);
         if (ta < 0) {
             p = &expand[LSIZE - n2];
             n2++;
@@ -45,8 +45,8 @@ int main(int argc, char const *argv[]) {
     expand[0].cur_sum = 0;
     expand[0].pre_sum = 0;
 
-    int max = 0;
-    int tmp = 0;
+    long long max = 0;
+    long long tmp = 0;
     sort(expand+1, expand+n1);
     for (int i = 1; i < n1; i++) {
         if (expand[i].w == expand[i-1].w) {
@@ -64,8 +64,8 @@ int main(int argc, char const *argv[]) {
     }
 
     double expand_result = max + expand[n1-1].pre_sum + expand[n1-1].cur_sum;
-    int sum_shrink = 0;
-    int max_shrink = 0;
+    long long sum_shrink = 0;
+    long long max_shrink = 0;
     for (int i = 1; i < n2; i++) {
         tmp = expand[LSIZE - i].w + expand[LSIZE - i].a;
         if (tmp > max_shrink) {
@@ -77,7 +77,7 @@ int main(int argc, char const *argv[]) {
     if (judge > 0) {
         max += judge;
     }
-    printf("%d\n", max);
+    printf("%lld\n", max);
 
     return 0;
 }
