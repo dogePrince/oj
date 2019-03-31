@@ -1,0 +1,23 @@
+###Case###
+0xax
+
+###Result###
+10
+
+###Case###
+0x13g0x10a
+
+###Result###
+19 266
+
+###Case###
+0xerts
+
+###Result###
+14
+
+###Case###
+190a
+
+###Result###
+-1

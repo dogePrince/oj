@@ -1,0 +1,16 @@
+###Case###
+4
+44444 ADDFFD
+00000 dfdaf
+ABCDE abcde 12345 !@#$%
+qweqrwwerr232424f   wetetg===2342gdsg3.,/-=@321
+
+###Result###
+case #0:
+6 0 1 5 0
+case #1:
+0 5 1 5 0
+case #2:
+5 5 3 5 5
+case #3:
+0 21 3 14 9

@@ -1,0 +1,20 @@
+###Case###
+在寒冷地雪山上,生长着一种绿色地小草。
+地 的
+
+###Result###
+在寒冷的雪山上,生长着一种绿色的小草。
+
+###Case###
+红的，白的，蓝的
+， 、
+
+###Result###
+红的、白的、蓝的
+
+###Case###
+abcbb cc ddeab
+ab f
+
+###Result###
+fcbb cc ddef

@@ -1,0 +1,27 @@
+###Case###
+this is a test
+
+###Result###
+A:A
+I:Is
+T:Test
+T:This
+
+###Case###
+how well the Party has performed
+
+###Result###
+H:Has
+H:How
+P:Party
+P:Performed
+T:The
+W:Well
+
+###Case###
+happy new year
+
+###Result###
+H:Happy
+N:New
+Y:Year

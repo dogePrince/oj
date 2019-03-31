@@ -7,7 +7,7 @@ using namespace std;
 #define LSIZE 200005
 
 int n;
-double sum, tmp;
+long long sum, tmp;
 int a[LSIZE], b[LSIZE];
 
 bool cmp1(const int v1, const int v2) {
@@ -30,10 +30,10 @@ int main(int argc, char const *argv[]) {
         sort(b, b+n, cmp2);
         sum = 0;
         for (int i = 0; i < n; i++) {
-            tmp = a[i] + b[i];
+            tmp = (long long)a[i] + b[i];
             sum += tmp * tmp;
         }
-        printf("%d\n", sum);
+        printf("%lld\n", sum);
     }
     return 0;
 }

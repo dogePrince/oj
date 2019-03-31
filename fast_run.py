@@ -183,6 +183,8 @@ class Project:
             if content1 == content2:
                 return 'passed'
             else:
+                print('Expected:', content1)
+                print('Actual:', content2)
                 return 'failed'
 
     def break_case(self, cases):
@@ -272,18 +274,22 @@ if __name__ == '__main__':
 
     P = Project(args.src, debug=args.out, _type=args.type, _args=args.run, cases=args.cases)
 
-    if not (args.build or args.run is not None or args.debug or args.delete or args.create):
-        P.args = []
-        P.build()
-        P.run()
-    else:
-        if args.build and not (args.delete or args.create):
+    try:
+        if not (args.build or args.run is not None or args.debug or args.delete or args.create):
+            P.args = []
             P.build()
-        if args.run is not None and not (args.debug or args.delete or args.create):
             P.run()
-        elif args.debug and not (args.run is not None or args.delete or args.create):
-            P.run(debug=True)
-        elif args.delete and not (args.run is not None or args.debug or args.create):
-            P.delete()
-        elif args.create and not (args.run is not None or args.debug or args.delete):
-            P.create()
+        else:
+            if args.build and not (args.delete or args.create):
+                P.build()
+            if args.run is not None and not (args.debug or args.delete or args.create):
+                P.run()
+            elif args.debug and not (args.run is not None or args.delete or args.create):
+                P.run(debug=True)
+            elif args.delete and not (args.run is not None or args.debug or args.create):
+                P.delete()
+            elif args.create and not (args.run is not None or args.debug or args.delete):
+                P.create()
+    except KeyboardInterrupt:
+        # catch control+C
+        pass
